@@ -2,6 +2,12 @@
 
 public class InputData
 {
+    public enum ServiceImplementations : int
+    {
+        First,
+        Second
+    }
+    
     public interface IService { }
     public abstract class AbstractService { }
     
