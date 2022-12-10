@@ -2,11 +2,14 @@
 
 public class DependencyProvider
 {
-    private DependenciesConfiguration _dependencies;
+    private readonly DependenciesConfiguration _configuration;
     
-    public DependencyProvider(DependenciesConfiguration dependencies)
+    public DependencyProvider(DependenciesConfiguration configuration)
     {
-        _dependencies = dependencies;
+        if (!IsValidConfig(configuration))
+            throw new DependenciesProviderException("Not valid configuration");
+            
+        _configuration = configuration;
     }
 
     public TDependency Resolve<TDependency>()
@@ -18,5 +21,20 @@ public class DependencyProvider
     {
         throw new NotImplementedException();
     }
-    
+
+    private static bool IsValidConfig(DependenciesConfiguration configs)
+    {
+        var dependencies = configs.GetAllDependencies();
+        
+        return 
+            !(from dependency in dependencies 
+                from implementation in configs.GetImplementationsDescriptions(dependency) 
+                where !IsValidImplementation(dependency, implementation.ToType()) select dependency).Any();
+    }
+
+    private static bool IsValidImplementation(Type dependency, Type implementation)
+    {
+        return !(implementation.IsAbstract || implementation.IsInterface)
+               && implementation.IsAssignableTo(dependency);
+    }
 }
