@@ -23,7 +23,8 @@ public class DependenciesConfigurationTests
         _configuration.Register<IEnumerable<int>, List<int>>();
         _configuration.Register<IEnumerable<int>, ConcurrentBag<int>>();
 
-        var actual = _configuration.GetImplementations<IEnumerable<int>>();
+        var actual = _configuration.GetImplementationsDescriptions<IEnumerable<int>>()
+            .Select(des => des.ToType()).ToArray();
 
         var isContainsAll = actual.Contains(typeof(List<int>))
                             && actual.Contains(typeof(ConcurrentBag<int>));
@@ -36,7 +37,7 @@ public class DependenciesConfigurationTests
     {
         try
         {
-            _configuration.GetImplementations<int>();
+            _configuration.GetImplementationsDescriptions<int>();
         }
         catch (DependenciesConfigurationException e)
         {
@@ -52,7 +53,8 @@ public class DependenciesConfigurationTests
         _configuration.Register<InputData.IService, InputData.Service1>(InputData.ServiceImplementations.First);
         _configuration.Register<InputData.IService, InputData.Service2>(InputData.ServiceImplementations.Second);
 
-        var actual = _configuration.GetImplementation<InputData.IService>(InputData.ServiceImplementations.Second);
+        var actual =
+            _configuration.GetImplementationDescription<InputData.IService>(InputData.ServiceImplementations.Second).ToType();
 
         var excepted = typeof(InputData.Service2);
 
@@ -66,7 +68,7 @@ public class DependenciesConfigurationTests
 
         try
         {
-            _configuration.GetImplementation<InputData.IService>(InputData.ServiceImplementations.Second);
+            _configuration.GetImplementationDescription<InputData.IService>(InputData.ServiceImplementations.Second);
         }
         catch (DependenciesConfigurationException)
         {

@@ -26,25 +26,25 @@ public class DependenciesConfiguration
         _lookupTable[typeDependency].Add(new ImplementationDescription(id, typeImplementation, lifecycle));
     }
 
-    public List<Type> GetImplementations<TDependency>()
+    public List<ImplementationDescription> GetImplementationsDescriptions<TDependency>()
     {
-        return GetImplementations(typeof(TDependency));
+        return GetImplementationsDescriptions(typeof(TDependency));
     }
     
-    public List<Type> GetImplementations(Type dependency)
+    public List<ImplementationDescription> GetImplementationsDescriptions(Type dependency)
     {
         if (!_lookupTable.TryGetValue(dependency, out var implDescriptions))
             throw new DependenciesConfigurationException(
                 $"Configuration hasn't implementation for {nameof(dependency)}");
         
-        return implDescriptions.Select(des => des.ToType()).ToList();
+        return implDescriptions.ToList();
     }
 
-    public Type GetImplementation<TDependency>(Enum id)
+    public ImplementationDescription GetImplementationDescription<TDependency>(Enum id)
     {
-        return GetImplementation(typeof(TDependency), id);
+        return GetImplementationDescription(typeof(TDependency), id);
     }
-    public Type GetImplementation(Type dependency, Enum id)
+    public ImplementationDescription GetImplementationDescription(Type dependency, Enum id)
     {
         if (!_lookupTable.TryGetValue(dependency, out var implDescriptions))
             throw new DependenciesConfigurationException(
@@ -52,7 +52,7 @@ public class DependenciesConfiguration
 
         try
         {
-            return implDescriptions.First(des => des.Id != null && des.Id.Equals(id)).ToType();
+            return implDescriptions.First(des => des.Id != null && des.Id.Equals(id));
         }
         catch (InvalidOperationException)
         {

@@ -1,6 +1,6 @@
 ﻿namespace DependencyInjectionContainer;
 
-internal struct ImplementationDescription
+public struct ImplementationDescription
 {
     public Enum? Id;
     public Type Type;
