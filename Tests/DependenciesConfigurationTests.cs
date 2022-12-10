@@ -77,4 +77,21 @@ public class DependenciesConfigurationTests
         
         Assert.Fail("GetImplementation returns invalid value");
     }
+    
+    [Test]
+    public void GetAllDependencies()
+    {
+        _configuration.Register<InputData.IService, InputData.Service1>(InputData.ServiceImplementations.First);
+        _configuration.Register<InputData.IService, InputData.Service2>(InputData.ServiceImplementations.Second);
+        _configuration.Register<InputData.AbstractService, InputData.Service1>(InputData.ServiceImplementations.First);
+        _configuration.Register<InputData.IRepository, InputData.RepositoryImpl>();
+
+        var actual = _configuration.GetAllDependencies();
+
+        var isCorrect = actual.Contains(typeof(InputData.IService))
+                        && actual.Contains(typeof(InputData.AbstractService))
+                        && actual.Contains(typeof(InputData.IRepository));
+        
+        Assert.IsTrue(isCorrect, "GetAllDependencies returns invalid value");
+    }
 }

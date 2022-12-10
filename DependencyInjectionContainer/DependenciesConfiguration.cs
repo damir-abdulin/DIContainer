@@ -60,4 +60,9 @@ public class DependenciesConfiguration
                 $"Configuration hasn't implementation for {nameof(dependency)} with id {id}");
         }
     }
+
+    public List<Type> GetAllDependencies()
+    {
+        return _lookupTable.Keys.ToList();
+    }
 }
