@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using DependencyInjectionContainer;
 using NUnit.Framework;
 using Moq;
@@ -117,6 +118,26 @@ public class DependencyInjectionContainerTests
         var excepted = "ServiceImpl <- RepositoryImpl";
         
         Assert.AreEqual(excepted, actual, $"Resolve returns '{actual}'");
+    }
+
+    [Test]
+    public void GetManyImplementations()
+    {
+        _configuration.Register<InputData.IService, InputData.Service1>();
+        _configuration.Register<InputData.IService, InputData.Service2>();
+        _configuration.Register<InputData.IService, InputData.ServiceImpl>();
+        _configuration.Register<InputData.IRepository, InputData.RepositoryImpl>();
+
+        _provider = new DependencyProvider(_configuration);
+
+        var actual = _provider.Resolve<IEnumerable<InputData.IService>>()
+            .Select(s => s.GetName()).ToArray();
+
+        var isCorrect = actual.Contains("Service1") 
+                        && actual.Contains("Service2")
+                        && actual.Contains("ServiceImpl <- RepositoryImpl");
+        
+        Assert.IsTrue(isCorrect, $"Resolve returns invalid value");
     }
 
 }

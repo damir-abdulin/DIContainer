@@ -1,4 +1,5 @@
-﻿using System.Dynamic;
+﻿using System.Collections;
+using System.Dynamic;
 using System.Net.WebSockets;
 using System.Reflection;
 
@@ -15,19 +16,23 @@ public class DependencyProvider
             
         _configuration = configuration;
     }
-
+    
     public TDependency Resolve<TDependency>()
     {
         return (TDependency)Resolve(typeof(TDependency));
     }
-
+    
     public object Resolve(Type dependency)
     {
         try
         {
+            if (dependency.IsGenericType && dependency.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                return GetImplementationList(dependency);
+            }
+            
             var impls = _configuration.GetImplementationsDescriptions(dependency);
             var type = impls[0].ToType();
-
             var impl = CreateInstance(type);
 
             if (impl is null)
@@ -88,5 +93,29 @@ public class DependencyProvider
                 ctor => ctor
                     .GetParameters()
                     .All(parameter => _configuration.IsContainsDependency(parameter.ParameterType)));
+    }
+
+    private object GetImplementationList(Type dependency)
+    {
+        var genericType = dependency.GenericTypeArguments[0];
+        var implementations = _configuration.GetImplementationsDescriptions(genericType);
+
+        var genericListType = typeof(List<>).MakeGenericType(genericType);
+        var list = Activator.CreateInstance(genericListType);
+
+        if (list is null)
+            throw new DependenciesProviderException("Couldn't create implementations list");
+
+        var result = (IList)list;
+
+        foreach (var obj in implementations.Select(impl => CreateInstance(impl.ToType())))
+        {
+            if (obj is null)
+                throw new DependenciesProviderException("Couldn't create object");
+
+            result.Add(obj);
+        }
+
+        return result;
     }
 }
