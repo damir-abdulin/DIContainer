@@ -1,4 +1,8 @@
-﻿namespace DependencyInjectionContainer;
+﻿using System.Dynamic;
+using System.Net.WebSockets;
+using System.Reflection;
+
+namespace DependencyInjectionContainer;
 
 public class DependencyProvider
 {
@@ -14,10 +18,30 @@ public class DependencyProvider
 
     public TDependency Resolve<TDependency>()
     {
-        throw new NotImplementedException();
+        return (TDependency)Resolve(typeof(TDependency));
     }
 
-    public TDependency Resolve<TDependency>(int id)
+    public object Resolve(Type dependency)
+    {
+        try
+        {
+            var impls = _configuration.GetImplementationsDescriptions(dependency);
+            var type = impls[0].ToType();
+
+            var impl = CreateInstance(type);
+
+            if (impl is null)
+                throw new DependenciesProviderException("Couldn't create object");
+
+            return impl;
+        }
+        catch (DependenciesConfigurationException ex)
+        {
+            throw new DependenciesProviderException("Couldn't get implementation", ex);
+        }
+    }
+
+    public TDependency Resolve<TDependency>(Enum id)
     {
         throw new NotImplementedException();
     }
@@ -36,5 +60,33 @@ public class DependencyProvider
     {
         return !(implementation.IsAbstract || implementation.IsInterface)
                && implementation.IsAssignableTo(dependency);
+    }
+
+    private object? CreateInstance(Type type)
+    {
+        var ctor = GetConstructor(type);
+
+        if (ctor is null) return Activator.CreateInstance(type);
+
+        var parameters = ctor.GetParameters();
+        var myParameters = new object[parameters.Length];
+        var currParam = 0;
+        
+        foreach (var parameter in parameters)
+        {
+            myParameters[currParam] = Resolve(parameter.ParameterType);
+            currParam += 1;
+        }
+
+        return ctor.Invoke(myParameters);
+    }
+
+    private ConstructorInfo? GetConstructor(Type type)
+    {
+        return type.GetConstructors()
+            .FirstOrDefault(
+                ctor => ctor
+                    .GetParameters()
+                    .All(parameter => _configuration.IsContainsDependency(parameter.ParameterType)));
     }
 }

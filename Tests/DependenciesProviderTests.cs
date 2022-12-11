@@ -89,4 +89,34 @@ public class DependencyInjectionContainerTests
         Assert.Fail("Incorrect work with invalid configuration");
     }
 
+    [Test]
+    public void GetImplementation()
+    {
+        _configuration.Register<InputData.IService, InputData.Service1>();
+        _configuration.Register<InputData.AbstractService, InputData.Service2>();
+
+        _provider = new DependencyProvider(_configuration);
+
+        var actual = _provider.Resolve<InputData.IService>().GetName();
+
+        var excepted = "Service1";
+        
+        Assert.AreEqual(excepted, actual, $"Resolve returns '{actual}'");
+    }
+    
+    [Test]
+    public void GetHierarchicalImplementations()
+    {
+        _configuration.Register<InputData.IService, InputData.ServiceImpl>();
+        _configuration.Register<InputData.IRepository, InputData.RepositoryImpl>();
+
+        _provider = new DependencyProvider(_configuration);
+
+        var actual = _provider.Resolve<InputData.IService>().GetName();
+
+        var excepted = "ServiceImpl <- RepositoryImpl";
+        
+        Assert.AreEqual(excepted, actual, $"Resolve returns '{actual}'");
+    }
+
 }

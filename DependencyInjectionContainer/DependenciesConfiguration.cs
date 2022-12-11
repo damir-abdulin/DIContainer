@@ -65,4 +65,9 @@ public class DependenciesConfiguration
     {
         return _lookupTable.Keys.ToList();
     }
+
+    public bool IsContainsDependency(Type dependency)
+    {
+        return _lookupTable.ContainsKey(dependency);
+    }
 }
