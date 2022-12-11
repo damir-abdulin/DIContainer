@@ -1,4 +1,5 @@
-﻿using NuGet.Frameworks;
+﻿using System.Threading;
+using NuGet.Frameworks;
 
 namespace Tests;
 
@@ -58,6 +59,21 @@ public class InputData
         public string GetName()
         {
             return "RepositoryImpl";
+        }
+    }
+    
+    public class Counter
+    {
+        public static int count = 0;
+
+        public int Count
+        {
+            get => count;
+            set => count = value;
+        }
+        public Counter()
+        {
+            Interlocked.Increment(ref count);
         }
     }
 

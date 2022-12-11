@@ -139,5 +139,39 @@ public class DependencyInjectionContainerTests
         
         Assert.IsTrue(isCorrect, $"Resolve returns invalid value");
     }
+    
+    [Test]
+    public void CreateSingleton()
+    {
+        InputData.Counter.count = 0;
+        _configuration.Register<InputData.Counter, InputData.Counter>(null, Lifecycle.Singleton);
+
+        _provider = new DependencyProvider(_configuration);
+        
+        _provider.Resolve<InputData.Counter>();
+        _provider.Resolve<InputData.Counter>();
+        _provider.Resolve<InputData.Counter>();
+        var actual = _provider.Resolve<InputData.Counter>().Count;
+        var excepted = 1;
+        
+        Assert.AreEqual(excepted, actual, $"Provider created {actual} singleton objects");
+    }
+    
+    [Test]
+    public void CreateTransient()
+    {
+        InputData.Counter.count = 0;
+        _configuration.Register<InputData.Counter, InputData.Counter>();
+
+        _provider = new DependencyProvider(_configuration);
+        
+        _provider.Resolve<InputData.Counter>();
+        _provider.Resolve<InputData.Counter>();
+        _provider.Resolve<InputData.Counter>();
+        var actual = _provider.Resolve<InputData.Counter>().Count;
+        var excepted = 4;
+        
+        Assert.AreEqual(excepted, actual, $"Provider created {actual} transient objects");
+    }
 
 }

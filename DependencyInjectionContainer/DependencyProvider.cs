@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Concurrent;
 using System.Dynamic;
 using System.Net.WebSockets;
 using System.Reflection;
@@ -8,13 +9,16 @@ namespace DependencyInjectionContainer;
 public class DependencyProvider
 {
     private readonly DependenciesConfiguration _configuration;
-    
+
+    private readonly ConcurrentDictionary<ImplementationDescription, object> _singletons;
+
     public DependencyProvider(DependenciesConfiguration configuration)
     {
         if (!IsValidConfig(configuration))
             throw new DependenciesProviderException("Not valid configuration");
             
         _configuration = configuration;
+        _singletons = new ConcurrentDictionary<ImplementationDescription, object>();
     }
     
     public TDependency Resolve<TDependency>()
@@ -31,14 +35,11 @@ public class DependencyProvider
                 return GetImplementationList(dependency);
             }
             
-            var impls = _configuration.GetImplementationsDescriptions(dependency);
-            var type = impls[0].ToType();
-            var impl = CreateInstance(type);
+            var implementation = _configuration.GetImplementationsDescriptions(dependency)[0];
 
-            if (impl is null)
-                throw new DependenciesProviderException("Couldn't create object");
-
-            return impl;
+            return implementation.Lifecycle == Lifecycle.Singleton 
+                ? GetSingleton(implementation)
+                : GetTransient(implementation.Type);
         }
         catch (DependenciesConfigurationException ex)
         {
@@ -117,5 +118,26 @@ public class DependencyProvider
         }
 
         return result;
+    }
+
+    private object GetTransient(Type type)
+    {
+        var impl = CreateInstance(type);
+
+        if (impl is null)
+            throw new DependenciesProviderException("Couldn't create object");
+
+        return impl;
+    }
+
+    private object GetSingleton(ImplementationDescription implDescription)
+    {
+        if (_singletons.ContainsKey(implDescription))
+            return _singletons[implDescription];
+        
+        var singleton =  GetTransient(implDescription.Type);
+        _singletons[implDescription] = singleton;
+
+        return singleton;
     }
 }
