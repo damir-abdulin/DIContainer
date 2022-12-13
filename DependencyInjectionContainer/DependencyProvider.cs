@@ -21,12 +21,12 @@ public class DependencyProvider
         _singletons = new ConcurrentDictionary<ImplementationDescription, object>();
     }
     
-    public TDependency Resolve<TDependency>()
+    public TDependency Resolve<TDependency>(Enum? id = null)
     {
-        return (TDependency)Resolve(typeof(TDependency));
+        return (TDependency)Resolve(typeof(TDependency), id);
     }
     
-    public object Resolve(Type dependency)
+    public object Resolve(Type dependency, Enum? id = null)
     {
         try
         {
@@ -34,9 +34,31 @@ public class DependencyProvider
             {
                 return GetImplementationList(dependency);
             }
-            
-            var implementation = _configuration.GetImplementationsDescriptions(dependency)[0];
 
+            ImplementationDescription implementation;
+
+            if (dependency.IsGenericType)
+            {
+                if (id is null)
+                    implementation = _configuration.GetImplementationsDescriptions(dependency.GetGenericTypeDefinition())[0];
+                else
+                    implementation = _configuration.GetImplementationsDescriptions(dependency.GetGenericTypeDefinition())
+                        .First(impl => impl.Id != null && impl.Id.Equals(id));
+                
+                implementation.Type = implementation.Type.MakeGenericType(dependency.GenericTypeArguments);
+            }
+            else
+            {
+                if (id is null)
+                    implementation = _configuration.GetImplementationsDescriptions(dependency)[0];
+                else
+                    implementation = _configuration.GetImplementationsDescriptions(dependency)
+                        .First(impl => impl.Id != null && impl.Id.Equals(id));
+            }
+
+            
+           
+            
             return implementation.Lifecycle == Lifecycle.Singleton 
                 ? GetSingleton(implementation)
                 : GetTransient(implementation.Type);
@@ -46,12 +68,7 @@ public class DependencyProvider
             throw new DependenciesProviderException("Couldn't get implementation", ex);
         }
     }
-
-    public TDependency Resolve<TDependency>(Enum id)
-    {
-        throw new NotImplementedException();
-    }
-
+    
     private static bool IsValidConfig(DependenciesConfiguration configs)
     {
         var dependencies = configs.GetAllDependencies();
@@ -65,7 +82,7 @@ public class DependencyProvider
     private static bool IsValidImplementation(Type dependency, Type implementation)
     {
         return !(implementation.IsAbstract || implementation.IsInterface)
-               && implementation.IsAssignableTo(dependency);
+               && (implementation.IsGenericTypeDefinition || implementation.IsAssignableTo(dependency));
     }
 
     private object? CreateInstance(Type type)

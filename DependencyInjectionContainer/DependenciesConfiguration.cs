@@ -11,6 +11,14 @@ public class DependenciesConfiguration
         _lookupTable = new ConcurrentDictionary<Type, ConcurrentBag<ImplementationDescription>>();
     }
 
+    public void Register(Type dependency, Type implementation, Enum? id = null,
+        Lifecycle lifecycle = Lifecycle.Transient)
+    {
+        _lookupTable.TryAdd(dependency, new ConcurrentBag<ImplementationDescription>());
+        
+        _lookupTable[dependency].Add(new ImplementationDescription(id, implementation, lifecycle));
+    }
+
     public void Register<TDependency, TImplementation>(Enum? id = null, Lifecycle lifecycle = Lifecycle.Transient)
     {
         var typeDependency = typeof(TDependency);
@@ -21,9 +29,7 @@ public class DependenciesConfiguration
         if (typeImplementation == null)
             throw new DependenciesConfigurationException($"typeof({nameof(typeImplementation)}) returns null");
 
-        _lookupTable.TryAdd(typeDependency, new ConcurrentBag<ImplementationDescription>());
-        
-        _lookupTable[typeDependency].Add(new ImplementationDescription(id, typeImplementation, lifecycle));
+        Register(typeDependency, typeImplementation, id, lifecycle);
     }
 
     public List<ImplementationDescription> GetImplementationsDescriptions<TDependency>()

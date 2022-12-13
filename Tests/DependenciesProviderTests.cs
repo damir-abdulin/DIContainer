@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using DependencyInjectionContainer;
 using NUnit.Framework;
-using Moq;
 
 namespace Tests;
 
@@ -172,6 +169,32 @@ public class DependencyInjectionContainerTests
         var excepted = 4;
         
         Assert.AreEqual(excepted, actual, $"Provider created {actual} transient objects");
+    }
+    
+    [Test]
+    public void CreateGenericImplementation()
+    {
+        _configuration.Register(typeof(IList<>), typeof(List<>));
+
+        _provider = new DependencyProvider(_configuration);
+
+        var actual = _provider.Resolve<IList<int>>();
+
+        Assert.IsNotNull(_provider, "Incorrect work with generic types");
+    }
+    
+    [Test]
+    public void UseId()
+    {
+        _configuration.Register<InputData.IService, InputData.Service1>(InputData.ServiceImplementations.First);
+        _configuration.Register<InputData.IService, InputData.Service2>(InputData.ServiceImplementations.Second);
+
+        _provider = new DependencyProvider(_configuration);
+
+        var actual = _provider.Resolve<InputData.IService>(InputData.ServiceImplementations.Second).GetName();
+
+        var excepted = "Service2";
+        Assert.AreEqual(excepted, actual, "Incorrect work with id");
     }
 
 }
